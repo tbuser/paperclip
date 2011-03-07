@@ -14,18 +14,6 @@ class AttachmentTest < Test::Unit::TestCase
     assert_equal "#{Rails.root}/public/fake_models/1234/fake", @attachment.path
   end
 
-  should "call a proc sent to check_guard" do
-    @dummy = Dummy.new
-    @dummy.expects(:one).returns(:one)
-    assert_equal :one, @dummy.avatar.send(:check_guard, lambda{|x| x.one })
-  end
-
-  should "call a method name sent to check_guard" do
-    @dummy = Dummy.new
-    @dummy.expects(:one).returns(:one)
-    assert_equal :one, @dummy.avatar.send(:check_guard, :one)
-  end
-
   context "Attachment default_options" do
     setup do
       rebuild_model
@@ -560,8 +548,6 @@ class AttachmentTest < Test::Unit::TestCase
       @attachment.expects(:valid_assignment?).with(@not_file).returns(true)
       @attachment.expects(:queue_existing_for_delete)
       @attachment.expects(:post_process)
-      @attachment.expects(:valid?).returns(true)
-      @attachment.expects(:validate)
       @attachment.expects(:to_tempfile).returns(@tempfile)
       @attachment.expects(:generate_fingerprint).with(@tempfile).returns("12345")
       @attachment.expects(:generate_fingerprint).with(@not_file).returns("12345")
