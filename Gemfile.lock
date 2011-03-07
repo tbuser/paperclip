@@ -9,13 +9,12 @@ GEM
       mime-types
       xml-simple
     builder (3.0.0)
-    cloudfiles (1.4.11)
+    cloudfiles (1.4.14)
       mime-types (>= 1.16)
     columnize (0.3.2)
     linecache (0.43)
     mime-types (1.16)
-    mocha (0.9.11)
-      rake
+    mocha (0.9.12)
     rake (0.8.7)
     ruby-debug (0.10.4)
       columnize (>= 0.1)
