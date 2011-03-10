@@ -43,9 +43,17 @@ module Paperclip
     # * +auth_url+: The URL to the authentication endpoint. If blank, defaults to the Rackspace Cloud Files
     #   USA endpoint. You can use this to specify things like the Rackspace Cloud Files UK infrastructure, or
     #   a non-Rackspace OpenStack Swift installation.  Requires 1.4.11 or higher of the Cloud Files gem.
+    # * +ssl+: Whether or not to serve this content over SSL.  If set to true, serves content as https, otherwise
+    #   not.  Can also take a lambda that returns true or false (for example, if the attachment object has a user object
+    #   and that user has ssl enabled)
     module Cloud_files
       def self.extended base
-        require 'cloudfiles'
+        begin
+          require 'cloudfiles'
+        rescue LoadError => e
+          e.message << " (You may need to install the cloudfiles gem)"
+          raise e
+        end unless defined?(CloudFiles)
         @@container ||= {}
         base.instance_eval do
           @cloudfiles_credentials = parse_credentials(@options[:cloudfiles_credentials])
@@ -53,8 +61,10 @@ module Paperclip
           @container_name         = @container_name.call(self) if @container_name.is_a?(Proc)
           @cloudfiles_options     = @options[:cloudfiles_options]     || {}
           @@cdn_url               = cloudfiles_container.cdn_url
+          @@ssl_url               = cloudfiles_container.cdn_ssl_url
+          @use_ssl                = @options[:ssl] || false
           @path_filename          = ":cf_path_filename" unless @url.to_s.match(/^:cf.*filename$/)
-          @url = @@cdn_url + "/#{URI.encode(@path_filename).gsub(/&/,'%26')}"
+          @url = (@use_ssl == true ? @@ssl_url : @@cdn_url) + "/#{URI.encode(@path_filename).gsub(/&/,'%26')}"
           @path = (Paperclip::Attachment.default_options[:path] == @options[:path]) ? ":attachment/:id/:style/:basename.:extension" : @options[:path]
         end
           Paperclip.interpolates(:cf_path_filename) do |attachment, style|
