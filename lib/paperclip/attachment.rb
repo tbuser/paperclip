@@ -25,6 +25,7 @@ module Paperclip
     end
 
     attr_reader :name, :instance, :default_style, :convert_options, :queued_for_write, :whiny, :options
+    attr_accessor :post_processing
 
     # Creates an Attachment object. +name+ is the name of the attachment,
     # +instance+ is the ActiveRecord object instance it's attached to, and
@@ -53,6 +54,7 @@ module Paperclip
       @convert_options       = options[:convert_options]
       @processors            = options[:processors]
       @options               = options
+      @post_processing       = true
       @queued_for_delete     = []
       @queued_for_write      = {}
       @errors                = {}
@@ -107,8 +109,8 @@ module Paperclip
 
       @dirty = true
 
-      post_process
- 
+      post_process if @post_processing
+
       # Reset the file size if the original file was reprocessed.
       instance_write(:file_size,   @queued_for_write[:original].size.to_i)
       instance_write(:fingerprint, generate_fingerprint(@queued_for_write[:original]))
@@ -214,10 +216,10 @@ module Paperclip
 
     # Returns a unique hash suitable for obfuscating the URL of an otherwise
     # publicly viewable attachment.
-    def hash
+    def hash(style_name = default_style)
       raise ArgumentError, "Unable to generate hash without :hash_secret" unless @hash_secret
       require 'openssl' unless defined?(OpenSSL)
-      data = interpolate(@hash_data)
+      data = interpolate(@hash_data, style_name)
       OpenSSL::HMAC.hexdigest(OpenSSL::Digest.const_get(@hash_digest).new, @hash_secret, data)
     end
 
@@ -243,7 +245,7 @@ module Paperclip
     # in the paperclip:refresh rake task and that's it. It will regenerate all
     # thumbnails forcefully, by reobtaining the original file and going through
     # the post-process again.
-    def reprocess!
+    def reprocess!(*style_args)
       new_original = Tempfile.new("paperclip-reprocess")
       new_original.binmode
       if old_original = to_file(:original)
@@ -251,7 +253,7 @@ module Paperclip
         new_original.rewind
 
         @queued_for_write = { :original => new_original }
-        post_process
+        post_process(*style_args)
 
         old_original.close if old_original.respond_to?(:close)
 
@@ -327,21 +329,23 @@ module Paperclip
       [ style_options, all_options ].compact.join(" ")
     end
 
-    def post_process #:nodoc:
+    def post_process(*style_args) #:nodoc:
       return if @queued_for_write[:original].nil?
       instance.run_paperclip_callbacks(:post_process) do
         instance.run_paperclip_callbacks(:"#{name}_post_process") do
-          post_process_styles
+          post_process_styles(*style_args)
         end
       end
     end
 
-    def post_process_styles #:nodoc:
+    def post_process_styles(*style_args) #:nodoc:
       styles.each do |name, style|
         begin
-          raise RuntimeError.new("Style #{name} has no processors defined.") if style.processors.blank?
-          @queued_for_write[name] = style.processors.inject(@queued_for_write[:original]) do |file, processor|
-            Paperclip.processor(processor).make(file, style.processor_options, self)
+          if style_args.empty? || style_args.include?(name)
+            raise RuntimeError.new("Style #{name} has no processors defined.") if style.processors.blank?
+            @queued_for_write[name] = style.processors.inject(@queued_for_write[:original]) do |file, processor|
+              Paperclip.processor(processor).make(file, style.processor_options, self)
+            end
           end
         rescue PaperclipError => e
           log("An error was received while processing: #{e.inspect}")
