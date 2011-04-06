@@ -102,14 +102,22 @@ module Paperclip
         cloudfiles_container.object_exists?(path(style))
       end
       
-      def read
-        self.data
+      def read(style = default_style)
+        cloudfiles_container.object(path(style)).data
       end
 
       # Returns representation of the data of the file assigned to the given
       # style, in the format most representative of the current storage.
       def to_file style = default_style
-        @queued_for_write[style] || cloudfiles_container.create_object(path(style))
+        return @queued_for_write[style] if @queued_for_write[style]
+        filename = path(style)
+        extname  = File.extname(filename)
+        basename = File.basename(filename, extname)
+        file = Tempfile.new([basename, extname])
+        file.binmode
+        file.write(cloudfiles_container.object(path(style)).data)
+        file.rewind
+        return file
       end
       alias_method :to_io, :to_file
 
