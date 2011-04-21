@@ -125,6 +125,8 @@ module Paperclip
         @queued_for_write.each do |style, file|
             object = cloudfiles_container.create_object(path(style),false)
             object.write(file)
+            # Temporary - do an edge purge on the CDN
+            object.purge_from_cdn
         end
         @queued_for_write = {}
       end
