@@ -124,9 +124,8 @@ module Paperclip
       def flush_writes #:nodoc:
         @queued_for_write.each do |style, file|
             object = cloudfiles_container.create_object(path(style),false)
-            object.write(file)
-            # Temporary - do an edge purge on the CDN
-            object.purge_from_cdn
+            md5 = Digest::MD5.hexdigest(File.read(file.path))
+            object.write(file, {'ETag' => md5})
         end
         @queued_for_write = {}
       end
