@@ -124,7 +124,7 @@ module Paperclip
       def flush_writes #:nodoc:
         @queued_for_write.each do |style, file|
             begin
-              cloudfiles_container.delete_object(path(style))
+              cloudfiles_container.object(path(style)).purge_from_cdn
             rescue CloudFiles::Exception::NoSuchObject
             end
             object = cloudfiles_container.create_object(path(style),false)
