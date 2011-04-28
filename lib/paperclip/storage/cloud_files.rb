@@ -25,6 +25,7 @@ module Paperclip
     #       api_key: 87k... 
     #       servicenet: true
     #       auth_url: https://lon.auth.api.rackspacecloud.com/v1.0
+    #       cname: http://cnd.myapp.com
     #   This is not required, however, and the file may simply look like this:
     #     username: minter...
     #     api_key: 11q... 
@@ -60,8 +61,8 @@ module Paperclip
           @container_name         = @options[:container] || options[:container_name] || @cloudfiles_credentials[:container] || @cloudfiles_credentials[:container_name]
           @container_name         = @container_name.call(self) if @container_name.is_a?(Proc)
           @cloudfiles_options     = @options[:cloudfiles_options]     || {}
-          @@cdn_url               = cloudfiles_container.cdn_url
-          @@ssl_url               = cloudfiles_container.cdn_ssl_url
+          @@cdn_url               = @cloudfiles_credentials[:cname] || cloudfiles_container.cdn_url
+          @@ssl_url               = @cloudfiles_credentials[:cname] || cloudfiles_container.cdn_ssl_url
           @use_ssl                = @options[:ssl] || false
           @path_filename          = ":cf_path_filename" unless @url.to_s.match(/^:cf.*filename$/)
           @url = (@use_ssl == true ? @@ssl_url : @@cdn_url) + "/#{URI.encode(@path_filename).gsub(/&/,'%26')}"
