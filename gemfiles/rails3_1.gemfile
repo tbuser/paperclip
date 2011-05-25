@@ -2,7 +2,6 @@
 
 source "http://rubygems.org"
 gem "shoulda"
-gem "cloudfiles", ">=1.4.11"
 gem "mocha"
 gem "rake"
 gem "ruby-debug", {:platform=>:ruby_18}
@@ -13,4 +12,4 @@ gem "appraisal"
 gem "fog"
 gem "bundler"
 gem "cocaine"
-gem "rails", "~>3.0.0"
+gem "rails", "~>3.1.0.rc1"

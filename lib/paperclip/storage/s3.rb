@@ -25,7 +25,7 @@ module Paperclip
     #   development versus production.
     # * +s3_permissions+: This is a String that should be one of the "canned" access
     #   policies that S3 provides (more information can be found here:
-    #   http://docs.amazonwebservices.com/AmazonS3/2006-03-01/RESTAccessPolicy.html#RESTCannedAccessPolicies)
+    #   http://docs.amazonwebservices.com/AmazonS3/latest/dev/index.html?RESTAccessPolicy.html)
     #   The default for Paperclip is :public_read.
     # * +s3_protocol+: The protocol for the URLs generated to your S3 assets. Can be either
     #   'http' or 'https'. Defaults to 'http' when your :s3_permissions are :public_read (the
@@ -94,8 +94,8 @@ module Paperclip
         end unless Paperclip::Interpolations.respond_to? :s3_domain_url
       end
 
-      def expiring_url(time = 3600)
-        AWS::S3::S3Object.url_for(path, bucket_name, :expires_in => time )
+      def expiring_url(time = 3600, style_name = default_style)
+        AWS::S3::S3Object.url_for(path(style_name), bucket_name, :expires_in => time, :use_ssl => (s3_protocol == 'https'))
       end
 
       def bucket_name
