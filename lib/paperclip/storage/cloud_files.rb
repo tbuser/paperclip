@@ -69,7 +69,7 @@ module Paperclip
           @path = (Paperclip::Attachment.default_options[:path] == @options[:path]) ? ":attachment/:id/:style/:basename.:extension" : @options[:path]
         end
           Paperclip.interpolates(:cf_path_filename) do |attachment, style|
-            attachment.path(style)
+            URI.encode(attachment.path(style))
           end
       end
       
