@@ -83,20 +83,25 @@ Create `config/rackspace_cloudfiles.yml`
 Declare that your model has an attachment with the has_attached_file method, and give it a name.
 In your model:
 
+```ruby
     class User < ActiveRecord::Base
       
       # More information about the has_attached_file options are available in the
       # documentation of Paperclip::ClassMethods.
+      
       has_attached_file :avatar,
         :styles => { :medium => "300x300>",  :thumb => "100x100>" },
         :storage => :cloud_files,
         :cloudfiles_credentials => "#{Rails.root}/config/rackspace_cloudfiles.yml"
+
       # Validation Methods:
+	
       validates_attachment_presence :avatar
       validates_attachment_content_type :avatar, :content_type => ['image/jpeg', 'image/png']
       validates_attachment_size :avatar, :in => 1..1.megabyte
     end
-
+```
+    
 Paperclip will wrap up up to four attributes (all prefixed with that attachment's name,
 so you can have multiple attachments per model if you wish) and give them a
 friendly front end.
