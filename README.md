@@ -5,7 +5,7 @@ Paperclip-Cloudfiles is intended as an easy file attachment library for ActiveRe
 
 Some features include:
 
-* Files  aren't saved to their final locations on disk, nor are they deleted if set to nil, until
+* Files aren't saved to their final locations on disk, nor are they deleted if set to nil, until
 ActiveRecord::Base#save is called.
 * Validations are managed based on size and
 presence, if required.
@@ -20,8 +20,7 @@ useful defaults.
 Note: The Thoughtbot guys have indicated that they
 don't want to pull any code into the official Paperclip mainline that they don't 
 personally use on projects, so until they discover the joy of Cloud Files, this 
-fork is available as the {paperclip-cloudfiles gem}[http://gemcutter.org/gems/paperclip-cloudfiles]
-on Gemcutter's gem server.
+fork is available on RubyGems.org at http://rubygems.org/gems/paperclip-cloudfiles
 
 The complete [RDoc](http://rdoc.info/github/minter/paperclip) is online.
 
@@ -108,22 +107,24 @@ friendly front end.
 
 In your migrations:
 
-    class AddAvatarColumnsToUser < ActiveRecord::Migration
+```ruby
+class AddAvatarColumnsToUser < ActiveRecord::Migration
 
-      def self.up
-        add_column :users, :avatar_file_name,    :string
-        add_column :users, :avatar_content_type, :string
-        add_column :users, :avatar_file_size,    :integer
-        add_column :users, :avatar_updated_at,   :datetime
-      end
+  def self.up
+      add_column :users, :avatar_file_name,    :string
+      add_column :users, :avatar_content_type, :string
+      add_column :users, :avatar_file_size,    :integer
+      add_column :users, :avatar_updated_at,   :datetime
+  end
 
-      def self.down
-        remove_column :users, :avatar_file_name
-        remove_column :users, :avatar_content_type
-        remove_column :users, :avatar_file_size
-        remove_column :users, :avatar_updated_at
-      end
-    end
+  def self.down
+      remove_column :users, :avatar_file_name
+      remove_column :users, :avatar_content_type
+      remove_column :users, :avatar_file_size
+      remove_column :users, :avatar_updated_at
+  end
+end
+```
 
 In your edit and new views:
 
@@ -160,13 +161,11 @@ file at
 _NOTE: This is a change from previous versions of Paperclip, but is overall a
 safer choice for the default file store._
 
-You may also choose to store your files using Rackspace's Cloud Files service. You can find
-more information about S3 storage at the description for Paperclip::Storage::S3. and more information about Cloud Files storage at the description for Paperclip::Storage::CloudFile
+You may also choose to store your files using Rackspace's Cloud Files service. You can find more information about Cloud Files storage at the description for Paperclip::Storage::CloudFile
 
 Note:
 
-Files on the local filesystem (and in the Rails app's public directory) will be
-available to the internet at large. If you require access control, it's
+Files on the local filesystem (and in the Rails app's public directory), and on Rackspace Cloudfiles, will be available to the internet at large. For the filesystem, if you require access control, it's
 possible to place your files in a different location. You will need to change
 both the :path and :url options in order to make sure the files are unavailable
 to the public. Both :path and :url allow the same set of interpolated
