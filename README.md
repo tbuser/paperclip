@@ -1,27 +1,26 @@
-Paperclip
-=========
+Paperclip-Cloudfiles
+=================================
 
-Paperclip is intended as an easy file attachment library for ActiveRecord. The
-intent behind it was to keep setup as easy as possible and to treat files as
-much like other attributes as possible. This means they aren't saved to their
-final locations on disk, nor are they deleted if set to nil, until
-ActiveRecord::Base#save is called. It manages validations based on size and
-presence, if required. It can transform its assigned image into thumbnails if
-needed, and the prerequisites are as simple as installing ImageMagick (which,
+Paperclip-Cloudfiles is intended as an easy file attachment library for ActiveRecord and all attachments are served from Rackspace's Cloudfiles.
+
+Some features include:
+
+* Files aren't saved to their final locations on disk, nor are they deleted if set to nil, until
+ActiveRecord::Base#save is called.
+* Validations are managed based on size and
+presence, if required.
+* It can transform its assigned image into thumbnails if
+needed, by installing ImageMagick (which,
 for most modern Unix-based systems, is as easy as installing the right
-packages). Attached files are saved to the filesystem and referenced in the
+packages).
+* Attached files are either saved to the filesystem, or to Rackspace Cloudfiles, and referenced in the
 browser by an easily understandable specification, which has sensible and
 useful defaults.
 
-See the documentation for `has_attached_file` in Paperclip::ClassMethods for
-more detailed options.
-
-This fork has support for Rackspace Cloud Files.  It requires the "cloudfiles"
-gem, >= 1.4.9, from Gemcutter.org.  The Thoughtbot guys have indicated that they
+Note: The Thoughtbot guys have indicated that they
 don't want to pull any code into the official Paperclip mainline that they don't 
 personally use on projects, so until they discover the joy of Cloud Files, this 
-fork is available as the {paperclip-cloudfiles gem}[http://gemcutter.org/gems/paperclip-cloudfiles]
-on Gemcutter's gem server.
+fork is available on RubyGems.org at http://rubygems.org/gems/paperclip-cloudfiles
 
 The complete [RDoc](http://rdoc.info/github/minter/paperclip) is online.
 
@@ -35,61 +34,97 @@ Allowed to refresh images of classes with namespaces. For example:
 Requirements
 ------------
 
-ImageMagick must be installed and Paperclip must have access to it. To ensure
-that it does, on your command line, run `which convert` (one of the ImageMagick
-utilities). This will give you the path where that utility is installed. For
-example, it might return `/usr/local/bin/convert`.
+ImageMagick must be installed and Paperclip must have access to it. Run `which convert` (one of the ImageMagick
+utilities).  It might return `/usr/local/bin/convert` or `/usr/bin/convert`.
 
-Then, in your environment config file, let Paperclip know to look there by adding that 
-directory to its path.
-
-In development mode, you might add this line to `config/environments/development.rb)`:
+Add the returned line to `config/environments/development.rb)` and to `config/environments/production.rb)`:
 
     Paperclip.options[:command_path] = "/usr/local/bin/"
 
 Installation
 ------------
 
-Paperclip is distributed as a gem, which is how it should be used in your app. It's
-technically still installable as a plugin, but that's discouraged, as Rails plays
-well with gems.
+Include the gem in your Gemfile (Rails 3 or Rails 2.x with Bundler):
+  
+    gem 'cloudfiles'
+    gem 'cocaine' #a dependency that paperclilp didn't pick up yet
+    gem 'paperclip-cloudfiles', :require => 'paperclip'
 
-Include the gem in your Gemfile:
+ (Rails 2 only) In your environment.rb:
 
-  gem "paperclip-cloudfiles", "~> 2.3"
-
-In your environment.rb:
-
-  config.gem "paperclip-cloudfiles", :lib => 'paperclip'
+    config.gem "paperclip-cloudfiles", :lib => 'paperclip'
 
 This is because the gem name and the library name don't match.
 
 Quick Start
 -----------
 
+Create `config/rackspace_cloudfiles.yml`
+
+    
+    DEFAULTS: &DEFAULTS
+      username: yourusernamehere
+      api_key: yourapikeyhere
+
+    development:
+      <<: *DEFAULTS
+      container: dev_avatars
+
+    test:
+      <<: *DEFAULTS
+      container: test_avatars
+
+    production:
+      <<: *DEFAULTS
+      container: avatars
+
+
+Declare that your model has an attachment with the has_attached_file method, and give it a name.
 In your model:
 
+```ruby
     class User < ActiveRecord::Base
-      has_attached_file :avatar, :styles => { :medium => "300x300>", :thumb => "100x100>" }
+      
+      # More information about the has_attached_file options are available in the
+      # documentation of Paperclip::ClassMethods.
+      
+      has_attached_file :avatar,
+        :styles => { :medium => "300x300>",  :thumb => "100x100>" },
+        :storage => :cloud_files,
+        :cloudfiles_credentials => "#{Rails.root}/config/rackspace_cloudfiles.yml"
+
+      # Validation Methods:
+	
+      validates_attachment_presence :avatar
+      validates_attachment_content_type :avatar, :content_type => ['image/jpeg', 'image/png']
+      validates_attachment_size :avatar, :in => 1..1.megabyte
     end
+```
+    
+Paperclip will wrap up up to four attributes (all prefixed with that attachment's name,
+so you can have multiple attachments per model if you wish) and give them a
+friendly front end.
 
 In your migrations:
 
-    class AddAvatarColumnsToUser < ActiveRecord::Migration
-      def self.up
-        add_column :users, :avatar_file_name,    :string
-        add_column :users, :avatar_content_type, :string
-        add_column :users, :avatar_file_size,    :integer
-        add_column :users, :avatar_updated_at,   :datetime
-      end
+```ruby
+class AddAvatarColumnsToUser < ActiveRecord::Migration
 
-      def self.down
-        remove_column :users, :avatar_file_name
-        remove_column :users, :avatar_content_type
-        remove_column :users, :avatar_file_size
-        remove_column :users, :avatar_updated_at
-      end
-    end
+  def self.up
+      add_column :users, :avatar_file_name,    :string
+      add_column :users, :avatar_content_type, :string
+      add_column :users, :avatar_file_size,    :integer
+      add_column :users, :avatar_updated_at,   :datetime
+  end
+
+  def self.down
+      remove_column :users, :avatar_file_name
+      remove_column :users, :avatar_content_type
+      remove_column :users, :avatar_file_size
+      remove_column :users, :avatar_updated_at
+  end
+end
+```
 
 In your edit and new views:
 
@@ -108,23 +143,7 @@ In your show view:
     <%= image_tag @user.avatar.url %>
     <%= image_tag @user.avatar.url(:medium) %>
     <%= image_tag @user.avatar.url(:thumb) %>
-
-Usage
------
-
-The basics of paperclip are quite simple: Declare that your model has an
-attachment with the has_attached_file method, and give it a name. Paperclip
-will wrap up up to four attributes (all prefixed with that attachment's name,
-so you can have multiple attachments per model if you wish) and give the a
-friendly front end. The attributes are `<attachment>_file_name`,
-`<attachment>_file_size`, `<attachment>_content_type`, and `<attachment>_updated_at`.
-Only `<attachment>_file_name` is required for paperclip to operate. More
-information about the options to has_attached_file is available in the
-documentation of Paperclip::ClassMethods.
-
-Attachments can be validated with Paperclip's validation methods,
-validates_attachment_presence, validates_attachment_content_type, and
-validates_attachment_size.
+ 
 
 Storage
 -------
@@ -142,11 +161,11 @@ file at
 _NOTE: This is a change from previous versions of Paperclip, but is overall a
 safer choice for the default file store._
 
-You may also choose to store your files using Amazon's S3 service or Rackspace's Cloud Files service. You can find
-more information about S3 storage at the description for Paperclip::Storage::S3. and more information about Cloud Files storage at the description for Paperclip::Storage::CloudFile
+You may also choose to store your files using Rackspace's Cloud Files service. You can find more information about Cloud Files storage at the description for Paperclip::Storage::CloudFile
 
-Files on the local filesystem (and in the Rails app's public directory) will be
-available to the internet at large. If you require access control, it's
+Note:
+
+Files on the local filesystem (and in the Rails app's public directory), and on Rackspace Cloudfiles, will be available to the internet at large. For the filesystem, if you require access control, it's
 possible to place your files in a different location. You will need to change
 both the :path and :url options in order to make sure the files are unavailable
 to the public. Both :path and :url allow the same set of interpolated
