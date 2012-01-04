@@ -47,6 +47,8 @@ module Paperclip
     # * +ssl+: Whether or not to serve this content over SSL.  If set to true, serves content as https, otherwise
     #   not.  Can also take a lambda that returns true or false (for example, if the attachment object has a user object
     #   and that user has ssl enabled)
+    # * +headers+: A hash of headers to pass when uploading a file to for example, set Access-Control- response headers 
+    #   and the Origin response header.
     module Cloud_files
       def self.extended base
         begin
@@ -61,6 +63,7 @@ module Paperclip
           @container_name         = @options[:container] || options[:container_name] || @cloudfiles_credentials[:container] || @cloudfiles_credentials[:container_name]
           @container_name         = @container_name.call(self) if @container_name.is_a?(Proc)
           @cloudfiles_options     = @options[:cloudfiles_options]     || {}
+          @headers                = @options[:headers]                || {}
           @@cdn_url               = @cloudfiles_credentials[:cname] || cloudfiles_container.cdn_url
           @@ssl_url               = @cloudfiles_credentials[:cname] || cloudfiles_container.cdn_ssl_url
           @use_ssl                = @options[:ssl] || false
@@ -125,7 +128,7 @@ module Paperclip
       def flush_writes #:nodoc:
         @queued_for_write.each do |style, file|
             object = cloudfiles_container.create_object(path(style),false)
-            object.load_from_filename(file.path)
+            object.load_from_filename(file.path, @headers)
         end
         @queued_for_write = {}
       end
