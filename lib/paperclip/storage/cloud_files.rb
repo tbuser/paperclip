@@ -127,6 +127,8 @@ module Paperclip
 
       def flush_writes #:nodoc:
         @queued_for_write.each do |style, file|
+            content_type = (Mime::Type.lookup_by_extension(File.extname(path(style)).gsub('.','')) || 'application/octet-stream').to_s
+            @headers['Content-Type'] = content_type
             object = cloudfiles_container.create_object(path(style),false)
             object.load_from_filename(file.path, @headers)
         end
