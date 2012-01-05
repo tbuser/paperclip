@@ -69,7 +69,7 @@ module Paperclip
           @use_ssl                = @options[:ssl] || false
           @path_filename          = ":cf_path_filename" unless @url.to_s.match(/^:cf.*filename$/)
           @url = (@use_ssl == true ? @@ssl_url : @@cdn_url) + "/#{URI.encode(@path_filename).gsub(/&/,'%26')}"
-          @path = (Paperclip::Attachment.default_options[:path] == @options[:path]) ? ":attachment/:id/:style/:basename.:extension" : @options[:path]
+          @path = @options[:path]
         end
           Paperclip.interpolates(:cf_path_filename) do |attachment, style|
             URI.encode(attachment.path(style))
